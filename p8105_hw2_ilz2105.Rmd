@@ -1,0 +1,40 @@
+---
+title: "p8105_hw2_ilz2105"
+output: github_document
+---
+
+library(tidyverse)
+library(readxl)
+
+**Problem 1**
+
+Import Mr. Trash Wheel data & clean
+
+```{r}
+# 2018 precipitation data
+mrtrash_data_2017 = read_xlsx("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3, na = "NA"  ) %>% 
+  janitor::clean_names() %>% 
+  mutate(Month = "Year")
+mrtrash_data_2017
+
+#2017 precipitation data
+mrtrash_data_2018 = read_xlsx("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA") %>% 
+  janitor::clean_names() %>% 
+  mutate(Month = "Year")
+mrtrash_data_2018
+
+```
+Read and clean the dataset:
+specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+use reasonable variable names
+omit rows that do not include dumpster-specific data
+round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer)
+
+Read and clean precipitation data for 2017 and 2018
+For each, omit rows without precipitation data and add a variable year. 
+Next, combine precipitation datasets and convert month to a character variable (the variable month.name is built into R and should be useful).
+```{r}
+
+```
+ 
+
