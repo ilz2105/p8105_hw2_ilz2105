@@ -1,34 +1,60 @@
 ---
 title: "p8105_hw2_ilz2105"
+author: "Lulu Zhang"
+date: 2019-09-29
 output: github_document
 ---
 
-library(tidyverse)
-library(readxl)
+--
+__Problem 1__
+--
 
-**Problem 1**
-
-Import Mr. Trash Wheel data & clean
 
 ```{r}
-# 2018 precipitation data
-mrtrash_data_2017 = read_xlsx("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3, na = "NA"  ) %>% 
-  janitor::clean_names() %>% 
-  mutate(Month = "Year")
-mrtrash_data_2017
+library(tidyverse)
+library(readxl)
+```
 
-#2017 precipitation data
-mrtrash_data_2018 = read_xlsx("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA") %>% 
+
+## Import Mr. Trash Wheel dataset & clean sheets 
+
+Below I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
+and `2018 Precipitation`. For the `mrtrashwheel` sheet, I omitted rows that did not contain `Dumpster` specific data 
+and non-data entries. The number of `Sports Balls` was rounded to the nearest integer and converted to 
+an integer variable using `as.integer`. 
+
+Next, I read and cleaned the precipitation data for the `2018 Precipitation` and `2017 Precipitation` sheets. 
+For each, I omitted rows without precipitation data and added a variable `year`. Then I combined the precipitation 
+datasets and converted `month` to a character variable. 
+
+```{r}
+# read and clean Mr. Trash Wheel sheet
+mrtrashwheel = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 1) %>% 
   janitor::clean_names() %>% 
-  mutate(Month = "Year")
+drop_na(dumpster) %>% 
+mutate(sports_balls = round(sports_balls, digits = 0)) %>%  
+mutate(sports_balls = as.integer(sports_balls))
+mrtrashwheel
+
+# read and clean 2018 precipitation data
+mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3 ) %>% 
+  janitor::clean_names() %>%
+  drop_na(x2) %>% 
+mutate(year = "2018")
 mrtrash_data_2018
 
+# Read and clean 2017 precipitation data
+mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA", ) %>% 
+  janitor::clean_names() %>%
+  drop_na( x2) %>% 
+  mutate(year = "2017")
+mrtrash_data_2017
+
+# combine precipitation datasets
+# convert month to character variable
+
 ```
-Read and clean the dataset:
-specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
-use reasonable variable names
-omit rows that do not include dumpster-specific data
-round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer)
+
 
 Read and clean precipitation data for 2017 and 2018
 For each, omit rows without precipitation data and add a variable year. 
