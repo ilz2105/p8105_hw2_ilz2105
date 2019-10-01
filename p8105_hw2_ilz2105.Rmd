@@ -52,7 +52,23 @@ mrtrash_data_2017
 
 # combine precipitation datasets
 # convert month to character variable
+precipitation_data = inner_join(mrtrash_data_2017, mrtrash_data_2018, by = "precipitation_in") %>% 
+  janitor::clean_names() %>%
+  bind_rows(year.x, year.y) %>%
+  pivot_longer(
+    year_x:year_y,
+    names_to = "year" ) 
+precipitation_data
 
+precipitation_data = 
+  bind_rows(mrtrash_data_2017, mrtrash_data_2018) %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    year.x:year.y,
+    names_to = "year" ) 
+  #mutate(race = str_to_lower(race)) %>% 
+  #select(movie, everything()) 
+precipitation_data
 ```
 
 
