@@ -13,6 +13,8 @@ __Problem 1__
 ```{r}
 library(tidyverse)
 library(readxl)
+library(tidyr)
+library(dplyr)
 ```
 
 
@@ -29,7 +31,7 @@ datasets and converted `month` to a character variable.
 
 ```{r}
 # read and clean Mr. Trash Wheel sheet
-mrtrashwheel = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 1) %>% 
+mrtrashwheel = read_excel("./Trash-Wheel-Collection-Totals-8-6-19.xlsx", 1, col_names = TRUE) %>% 
   janitor::clean_names() %>% 
 drop_na(dumpster) %>% 
 mutate(sports_balls = round(sports_balls, digits = 0)) %>%  
@@ -37,34 +39,32 @@ mutate(sports_balls = as.integer(sports_balls))
 mrtrashwheel
 
 # read and clean 2018 precipitation data
-mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3 ) %>% 
+mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3, col_names = TRUE ) %>% 
   janitor::clean_names() %>%
   drop_na(x2) %>% 
-mutate(year = "2018")
+mutate(year = as.numeric(2018))
 mrtrash_data_2018
 
 # Read and clean 2017 precipitation data
-mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA", ) %>% 
+mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA" , col_names = TRUE) %>% 
   janitor::clean_names() %>%
-  drop_na( x2) %>% 
-  mutate(year = "2017")
+  drop_na( x2)  %>% 
+  mutate(year = as.numeric(2017))
 mrtrash_data_2017
 
 # combine precipitation datasets
 # convert month to character variable
-#precipitation_data = inner_join(mrtrash_data_2017, mrtrash_data_2018, by = "precipitation_in") %>% 
-  #janitor::clean_names() %>%
-  bind_rows(year.x, year.y) %>%
-  pivot_longer(
-    year_x:year_y,
-    names_to = "year" ) 
+precipitation_data = merge(mrtrash_data_2017, mrtrash_data_2018, by = "year")  
+  #bind_rows(year, year) %>%
+ # pivot_longer(
+   # year_x:year_y,
+    #names_to = "year" ) 
 precipitation_data
 
 precipitation_data = 
   bind_rows(mrtrash_data_2017, mrtrash_data_2018) %>%
   janitor::clean_names() %>%
   pivot_longer(
-    year.x:year.y,
     names_to = "year" ) 
   #mutate(race = str_to_lower(race)) %>% 
   #select(movie, everything()) 
@@ -93,24 +93,75 @@ pols_month = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>%
   janitor::clean_names() %>% 
   separate(mon, into = c("year", "month", "day")) %>% 
   mutate(month.name = "month_number") %>% 
-  select(gop = prez_gop) %>% 
-  #drop_na(prez_dem) %>% 
-  #drop_na(prez_gop) %>% 
-  #drop_na(day)
+  #mutate(president = c("gop", "dem")) %>% 
+  drop_na(prez_dem) %>% 
+  drop_na(prez_gop) %>% 
+  drop_na(day)
 
 pols_month
 # import snp.csv and clean
 snp = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
-  janitor::clean_names()
+  janitor::clean_names() %>% 
+separate(date, into = c("month","day", "year" )) %>% 
+  select(starts_with("year"), everything())  %>% 
+  mutate(month = month.name[as.numeric(month)])  
+ #order("year", decreasing = FALSE)
+snp
+
 
 # import and tidy unemployment data for merge
-unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv") %>% 
-  janitor::clean_names()
+unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv") 
+unemployment
+#%>% 
+  janitor::clean_names() %>% 
+  pivot_longer(unemployment, month, names_to = "month", names_prefix = NULL, 
+               names_sep = NULL, names_pattern = NULL, names_ptypes = list(), names_repair = "check_unique", 
+               values_to = "value",
+               values_drop_na = FALSE, values_ptypes = list())
+   #gather( month, percentage, jan:dec, factor_key = TRUE)) %>% 
+  mutate(month = month.name[as.numeric(month)])
+  
+unemployment %>% 
+order("year",na.last = FALSE, decreasing = FALSE)
+unemploymentnew = unemployment[order(month),]
+
+
+
+# merge pols_month, snp, and unemployment
 ```
+
+```{r}
+pols_month = read.csv("./fivethirtyeight_datasets/pols-month.csv")
+pols_month
+```
+
 
 
 Join the datasets by merging snp into pols, and merging unemployment into the result.
 
+--
+__Problem 3__
+--
+
+Load and tidy the data. Note that, although these data may seem fairly well formatted initially, 
+the names of a categorical predictor and the case structure of string variables changed over time; 
+you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will 
+need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
+
+Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” 
+as a female baby name over time; this should have rows for ethnicities and columns for year. Produce 
+a similar table showing the most popular name among male children over time.
+
+Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
+children with a name (y axis) against the rank in popularity of that name (x axis).
+```{r}
+
+#load baby names dataset and tidy
+baby_names = read_csv("./Popular_Baby_Names.csv") %>% 
+  janitor::clean_names() %>% 
+  distinct(baby_names,childs_first_name, .keep_all = TRUE)
+baby_names
+```
 
 
  
