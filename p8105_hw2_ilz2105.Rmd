@@ -10,12 +10,11 @@ __Problem 1__
 --
 
 
-```{r}
+```{r , message=FALSE}
 library(tidyverse)
 library(readxl)
 library(tidyr)
 library(dplyr)
-library(data.table)
 ```
 
 
@@ -41,8 +40,6 @@ mrtrashwheel
 
 # read and clean 2018 precipitation data
 mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2018 Precipitation", skip = 1 ) %>% 
-#mrtrash_data_2018
-
   janitor::clean_names() %>%
   drop_na() %>% 
 mutate(year = as.numeric(2018))
@@ -52,7 +49,7 @@ mrtrash_data_2018
 mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2017 Precipitation", na = "NA" , skip = 1) %>% 
   janitor::clean_names() %>%
   #select(-precipitation_in, x2) %>% 
-  drop_na( )  %>% 
+  drop_na() %>% 
   mutate(year = as.numeric(2017))
 mrtrash_data_2017
 
@@ -61,91 +58,83 @@ mrtrash_data_2017
 precipitation_data = bind_rows(mrtrash_data_2017, mrtrash_data_2018)  %>% 
   janitor::clean_names() %>% 
 mutate(month = as.numeric(month),
-       month = month.abb[month])
-  #bind_rows(year, year) %>%
- # pivot_longer(
-   # year_x:year_y,
-    #names_to = "year" ) 
+       month = month.name[month])
+
 precipitation_data
 
-precipitation_data = 
-  bind_rows(mrtrash_data_2017, mrtrash_data_2018) %>%
-  janitor::clean_names() %>%
-  pivot_longer(
-    names_to = "year" ) 
-  #mutate(race = str_to_lower(race)) %>% 
-  #select(movie, everything()) 
-precipitation_data
+
+both_precipitation = full_join(mrtrash_data_2017, mrtrash_data_2018, 
+                               by = c("month", "total", "year")) %>% 
+  janitor::clean_names() %>% 
+mutate(month = as.numeric(month),
+       month = month.name[month])
+both_precipitation
 ```
 
 --
 __Problem 2__
 --
 
-First, clean the data in pols-month.csv. Use separate() to break up the variable mon into integer variables 
-year, month, and day; replace month number with month name; create a president variable taking values 
-gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
-
-Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, 
-arrange according to year and month, and organize so that year and month are the leading columns.
-
-Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve 
-switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key
-variables take the same values.
-
+First, clean the data in `pols-month.csv`. Use separate() to break up the variable mon into integer variables 
+`year`, `month`, and `day`; replace `month number` with `month name`; create a `president` variable taking values 
+`gop` and `dem`, and remove `prez_dem` and `prez_gop`; and remove the `day` variable.
 
 ```{r}
 # import pols-month.csv and clean
-pols_month = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
+pols = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   separate(mon, into = c("year", "month", "day")) %>% 
   mutate(month = as.numeric(month),
-       month = month.abb[month],
+       month = month.name[month],
   prez_gop = recode(prez_gop, '1' = "gop" ,  '2' = "gop" ,  '0' = "dem" ),
    president = prez_gop )%>% 
-  select(-prez_dem, -prez_gop, -day) 
+  select(-prez_dem, -prez_gop, -day)
 
-pols_month
+pols
+```
+
+Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, 
+arrange according to `year` and `month`, and organize so that `year` and `month` are the leading columns.
+
+
+```{r}
 # import snp.csv and clean
 snp = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
   janitor::clean_names() %>% 
 separate(date, into = c("month","day", "year" )) %>% 
   select(starts_with("year"), everything(), -day)  %>% 
   mutate(month = month.name[as.numeric(month)]) 
- 
-#prez_gop = recode()
- #order("year", decreasing = FALSE)
+
 snp
-
-
-# import and tidy unemployment data for merge
-unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv")# %>% 
-  janitor::clean_names()
-  unemployment %>% 
-  pivot_longer(unemployment, month, names_to = "month", names_prefix = NULL, 
-               names_sep = NULL, names_pattern = NULL, names_ptypes = list(), names_repair = "check_unique", 
-               values_to = "value",
-               values_drop_na = FALSE, values_ptypes = list())
-   #gather( month, percentage, jan:dec, factor_key = TRUE)) %>% 
-  mutate(month = month.name[as.numeric(month)])
-  
-unemployment %>% 
-order("year",na.last = FALSE, decreasing = FALSE)
-unemploymentnew = unemployment[order(month),]
-
-
-
-# merge pols_month, snp, and unemployment
 ```
+
+Third, I tidied the `unemployment` data so that it can be merged with the previous datasets. This process involved 
+switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
 
 ```{r}
-pols_month = read.csv("./fivethirtyeight_datasets/pols-month.csv")
-pols_month
+
+# import and tidy unemployment data 
+# switch from 'wide' to 'long' format
+unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv")  %>% 
+   pivot_longer(Jan:Dec, names_to = "month", values_to = "percent") %>% 
+  mutate(month = match(month, month.abb),
+                       month = month.name[month]) %>% 
+  janitor::clean_names()
+
+unemployment
+
+```
+
+Next, I joined the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
+
+```{r}
+
+# merge pols_month, snp, and unemployment
+
 ```
 
 
 
-Join the datasets by merging snp into pols, and merging unemployment into the result.
 
 --
 __Problem 3__
