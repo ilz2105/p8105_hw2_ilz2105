@@ -15,6 +15,7 @@ library(tidyverse)
 library(readxl)
 library(tidyr)
 library(dplyr)
+library(data.table)
 ```
 
 
@@ -39,22 +40,28 @@ mutate(sports_balls = as.integer(sports_balls))
 mrtrashwheel
 
 # read and clean 2018 precipitation data
-mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 3, col_names = TRUE ) %>% 
+mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2018 Precipitation", skip = 1 ) %>% 
+#mrtrash_data_2018
+
   janitor::clean_names() %>%
-  drop_na(x2) %>% 
+  drop_na() %>% 
 mutate(year = as.numeric(2018))
 mrtrash_data_2018
 
 # Read and clean 2017 precipitation data
-mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 4, na = "NA" , col_names = TRUE) %>% 
+mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2017 Precipitation", na = "NA" , skip = 1) %>% 
   janitor::clean_names() %>%
-  drop_na( x2)  %>% 
+  #select(-precipitation_in, x2) %>% 
+  drop_na( )  %>% 
   mutate(year = as.numeric(2017))
 mrtrash_data_2017
 
 # combine precipitation datasets
 # convert month to character variable
-precipitation_data = merge(mrtrash_data_2017, mrtrash_data_2018, by = "year")  
+precipitation_data = bind_rows(mrtrash_data_2017, mrtrash_data_2018)  %>% 
+  janitor::clean_names() %>% 
+mutate(month = as.numeric(month),
+       month = month.abb[month])
   #bind_rows(year, year) %>%
  # pivot_longer(
    # year_x:year_y,
@@ -92,28 +99,29 @@ variables take the same values.
 pols_month = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   separate(mon, into = c("year", "month", "day")) %>% 
-  mutate(month.name = "month_number") %>% 
-  #mutate(president = c("gop", "dem")) %>% 
-  drop_na(prez_dem) %>% 
-  drop_na(prez_gop) %>% 
-  drop_na(day)
+  mutate(month = as.numeric(month),
+       month = month.abb[month],
+  prez_gop = recode(prez_gop, '1' = "gop" ,  '2' = "gop" ,  '0' = "dem" ),
+   president = prez_gop )%>% 
+  select(-prez_dem, -prez_gop, -day) 
 
 pols_month
 # import snp.csv and clean
 snp = read.csv("./fivethirtyeight_datasets/snp.csv") %>% 
   janitor::clean_names() %>% 
 separate(date, into = c("month","day", "year" )) %>% 
-  select(starts_with("year"), everything())  %>% 
-  mutate(month = month.name[as.numeric(month)])  
+  select(starts_with("year"), everything(), -day)  %>% 
+  mutate(month = month.name[as.numeric(month)]) 
+ 
+#prez_gop = recode()
  #order("year", decreasing = FALSE)
 snp
 
 
 # import and tidy unemployment data for merge
-unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv") 
-unemployment
-#%>% 
-  janitor::clean_names() %>% 
+unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv")# %>% 
+  janitor::clean_names()
+  unemployment %>% 
   pivot_longer(unemployment, month, names_to = "month", names_prefix = NULL, 
                names_sep = NULL, names_pattern = NULL, names_ptypes = list(), names_repair = "check_unique", 
                values_to = "value",
@@ -159,9 +167,26 @@ children with a name (y axis) against the rank in popularity of that name (x axi
 #load baby names dataset and tidy
 baby_names = read_csv("./Popular_Baby_Names.csv") %>% 
   janitor::clean_names() %>% 
-  distinct(baby_names,childs_first_name, .keep_all = TRUE)
-baby_names
+  distinct() %>% 
+  mutate_all(toupper) %>% 
+  rename("year" = year_of_birth, "name" = childs_first_name) #%>% 
+  
+  
+  baby_names
+
+#rename year_of_birth to year
+# rename childs_first_name to name
 ```
+
+```{r}
+baby_names %>% 
+  group_by(year) %>% 
+  filter(name == "OLIVIA") %>% 
+  select("year", "ethnicity", "rank") %>% 
+  pivot_wider(names_from = "year", values_from = "rank") %>% 
+  knitr::kable(digits = 1)
+```
+
 
 
  
