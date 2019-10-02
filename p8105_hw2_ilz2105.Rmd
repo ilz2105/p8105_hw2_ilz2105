@@ -15,12 +15,14 @@ library(tidyverse)
 library(readxl)
 library(tidyr)
 library(dplyr)
+library(ggridges)
 ```
 
 
 ### Import Mr. Trash Wheel dataset & clean sheets 
 
-Below I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
+Below7
+I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
 and `2018 Precipitation`. For the `mrtrashwheel` sheet, I omitted rows that did not contain `Dumpster` specific data 
 and non-data entries. The number of `Sports Balls` was rounded to the nearest integer and converted to 
 an integer variable using `as.integer`. 
@@ -132,10 +134,11 @@ Next, I joined the datasets by merging `snp` into `pols`, and merging `unemploym
 
 # merge pols_month, snp, and unemployment
 final = inner_join(snp, pols, by = c("year", "month")) %>% 
-  janitor::clean_names() #%>% 
-  #merge(final, unemployment, by = c("year", "month"))
+  janitor::clean_names() %>% 
+  merge( unemployment, by = c("year", "month"))
 final
 ```
+Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
 
 
@@ -144,17 +147,14 @@ final
 __Problem 3__
 --
 
+### Import `Popular_Baby_Names` dataset, tidy, and manipulate
+
 Load and tidy the data. Note that, although these data may seem fairly well formatted initially, 
 the names of a categorical predictor and the case structure of string variables changed over time; 
 you’ll need to address this in your data cleaning. Also, some rows seem duplicated, and these will 
 need to be removed (hint: google something like “dplyr remove duplicate rows” to get started).
 
-Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” 
-as a female baby name over time; this should have rows for ethnicities and columns for year. Produce 
-a similar table showing the most popular name among male children over time.
 
-Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
-children with a name (y axis) against the rank in popularity of that name (x axis).
 ```{r}
 
 #load baby names dataset and tidy
@@ -162,23 +162,51 @@ baby_names = read_csv("./Popular_Baby_Names.csv") %>%
   janitor::clean_names() %>% 
   distinct() %>% 
   mutate_all(toupper) %>% 
-  rename("year" = year_of_birth, "name" = childs_first_name) #%>% 
+  rename("year" = year_of_birth, "name" = childs_first_name) %>% 
+  arrange(desc(gender))
+          
   
   
-  baby_names
+baby_names
 
 #rename year_of_birth to year
 # rename childs_first_name to name
 ```
+Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” 
+as a female baby name over time; this should have rows for ethnicities and columns for year. Produce 
+a similar table showing the most popular name among male children over time.
+
 
 ```{r}
+#table showing rank in popularity of the name 'Olivia" 
 baby_names %>% 
   group_by(year) %>% 
   filter(name == "OLIVIA") %>% 
   select("year", "ethnicity", "rank") %>% 
   pivot_wider(names_from = "year", values_from = "rank") %>% 
   knitr::kable(digits = 1)
+
+# table for 'ETHAN'
+baby_names %>% 
+  group_by(year) %>% 
+  filter(name == "ETHAN") %>% 
+  select("year", "ethnicity", "rank") %>% 
+  pivot_wider(names_from = "year", values_from = "rank") %>% 
+  knitr::kable(digits = 1)
 ```
+
+Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
+children with a name (y axis) against the rank in popularity of that name (x axis).
+```{r}
+
+plot = filter(baby_names, gender == "MALE", ethnicity == "WHITE NON HISPANIC", year == "2016") %>% 
+
+ggplot( aes(x = "name", y = "rank", color = count)) +
+  geom_point()
+
+plot
+```
+
 
 
 
