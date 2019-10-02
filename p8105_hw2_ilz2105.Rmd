@@ -18,7 +18,7 @@ library(dplyr)
 ```
 
 
-## Import Mr. Trash Wheel dataset & clean sheets 
+### Import Mr. Trash Wheel dataset & clean sheets 
 
 Below I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
 and `2018 Precipitation`. For the `mrtrashwheel` sheet, I omitted rows that did not contain `Dumpster` specific data 
@@ -59,9 +59,9 @@ precipitation_data = bind_rows(mrtrash_data_2017, mrtrash_data_2018)  %>%
   janitor::clean_names() %>% 
 mutate(month = as.numeric(month),
        month = month.name[month])
-
 precipitation_data
 
+# or 
 
 both_precipitation = full_join(mrtrash_data_2017, mrtrash_data_2018, 
                                by = c("month", "total", "year")) %>% 
@@ -74,6 +74,7 @@ both_precipitation
 --
 __Problem 2__
 --
+### Read and tidy `pols`, `snp`, and `unemployment` data and merge
 
 First, clean the data in `pols-month.csv`. Use separate() to break up the variable mon into integer variables 
 `year`, `month`, and `day`; replace `month number` with `month name`; create a `president` variable taking values 
@@ -130,7 +131,10 @@ Next, I joined the datasets by merging `snp` into `pols`, and merging `unemploym
 ```{r}
 
 # merge pols_month, snp, and unemployment
-
+final = inner_join(snp, pols, by = c("year", "month")) %>% 
+  janitor::clean_names() #%>% 
+  #merge(final, unemployment, by = c("year", "month"))
+final
 ```
 
 
