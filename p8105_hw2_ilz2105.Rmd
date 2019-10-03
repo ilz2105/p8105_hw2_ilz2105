@@ -21,22 +21,18 @@ library(ggridges)
 
 ### Import Mr. Trash Wheel dataset & clean sheets 
 
-Below7
-I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
+Below I imported the `Mr. Trash Wheel` dataset and specified the sheets: `Mr Trash Wheel`, `2017 Precipitation`, 
 and `2018 Precipitation`. For the `mrtrashwheel` sheet, I omitted rows that did not contain `Dumpster` specific data 
 and non-data entries. The number of `Sports Balls` was rounded to the nearest integer and converted to 
 an integer variable using `as.integer`. 
 
-```{r}
+```{r, message = FALSE}
 # read and clean Mr. Trash Wheel sheet
 mrtrashwheel = read_excel("./Trash-Wheel-Collection-Totals-8-6-19.xlsx", 1, col_names = TRUE) %>% 
   janitor::clean_names() %>% 
 drop_na(dumpster) %>% 
 mutate(sports_balls = round(sports_balls, digits = 0)) %>%  
 mutate(sports_balls = as.integer(sports_balls))
-mrtrashwheel
-
-median(pull(filter(mrtrashwheel, year == "2017") , sports_balls))
 
 ```
 
@@ -44,13 +40,12 @@ Next, I read and cleaned the precipitation data for the `2018 Precipitation` and
 For each, I omitted rows without precipitation data and added a variable `year`. Then I combined the precipitation 
 datasets and converted `month` to a character variable.
 
-```{r}
+```{r, message = FALSE}
 # read and clean 2018 precipitation data
 mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2018 Precipitation", skip = 1 ) %>% 
   janitor::clean_names() %>%
   drop_na() %>% 
 mutate(year = as.numeric(2018))
-mrtrash_data_2018
 
 # Read and clean 2017 precipitation data
 mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2017 Precipitation", na = "NA" , skip = 1) %>% 
@@ -58,7 +53,7 @@ mrtrash_data_2017 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", 
   #select(-precipitation_in, x2) %>% 
   drop_na() %>% 
   mutate(year = as.numeric(2017))
-mrtrash_data_2017
+
 
 # combine precipitation datasets
 # convert month to character variable
@@ -66,7 +61,6 @@ precipitation_data = bind_rows(mrtrash_data_2017, mrtrash_data_2018)  %>%
   janitor::clean_names() %>% 
 mutate(month = as.numeric(month),
        month = month.name[month])
-precipitation_data
 
 # or 
 
@@ -75,8 +69,9 @@ both_precipitation = full_join(mrtrash_data_2017, mrtrash_data_2018,
   janitor::clean_names() %>% 
 mutate(month = as.numeric(month),
        month = month.name[month])
-both_precipitation
+
 ```
+
 
 The number of observations for the `mrtrashwheel` sheet was `r nrow(mrtrashwheel)`, and `r nrow(both_precipitation)` 
 in the `both_precipitation` dataset. The `mrtrash_data_2018` had `r nrow(mrtrash_data_2018)` observations, and the `mrtrash_data_2017` 
@@ -89,13 +84,14 @@ Some key variables in the sheets are `year` and `month` because those are the va
 --
 __Problem 2__
 --
+
 ### Read and tidy `pols`, `snp`, and `unemployment` data and merge
 
 First, clean the data in `pols-month.csv`. Use separate() to break up the variable mon into integer variables 
 `year`, `month`, and `day`; replace `month number` with `month name`; create a `president` variable taking values 
 `gop` and `dem`, and remove `prez_dem` and `prez_gop`; and remove the `day` variable.
 
-```{r}
+```{r, message = FALSE}
 # import pols-month.csv and clean
 pols = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>% 
   janitor::clean_names() %>% 
@@ -103,10 +99,11 @@ pols = read.csv("./fivethirtyeight_datasets/pols-month.csv") %>%
   mutate(month = as.numeric(month),
        month = month.name[month],
   prez_gop = recode(prez_gop, '1' = "gop" ,  '2' = "gop" ,  '0' = "dem" ),
-   president = prez_gop )%>% 
+   president = prez_gop
+  #year = as.numeric(year)
+  )%>% 
   select(-prez_dem, -prez_gop, -day)
 
-pols
 ```
 
 Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, 
@@ -121,11 +118,11 @@ separate(date, into = c("month","day", "year" )) %>%
   select(starts_with("year"), everything(), -day)  %>% 
   mutate(month = month.name[as.numeric(month)]) 
 
-snp
 ```
 
 Third, I tidied the `unemployment` data so that it can be merged with the previous datasets. This process involved 
-switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring 
+that key variables take the same values.
 
 ```{r}
 
@@ -137,24 +134,38 @@ unemployment = read.csv("./fivethirtyeight_datasets/unemployment.csv")  %>%
                        month = month.name[month]) %>% 
   janitor::clean_names()
 
-unemployment
-
 ```
 
 Next, I joined the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
 
 ```{r}
 
-# merge pols_month, snp, and unemployment
+# merge pols, snp, and unemployment
 final = inner_join(snp, pols, by = c("year", "month")) %>% 
   janitor::clean_names() %>% 
   merge( unemployment, by = c("year", "month"))
-final
+
 ```
 Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
+The `pols` dataset contained information about the number of national politicians who are `dem` or `rep` at 
+any given time. The data also contained info about the number of `dem` or `gop` senators, govenors, or representatives 
+on the associated `date`. For example, in `march` `1947`, there are 23 republican govenors and 51 republican senators, which we see 
+by looking at the `gov_gop` and `sen_gop` columns respectively for that `month` and `year`. `pols` has `r nrow(pols)` observations, with `year` 
+ranging from `r range(pull(pols, year))`. 
 
+The `snp` dataset contains `r nrow(snp)` observations with 3 variables, `year`, `month`, and `close`, which is the S&P stock
+market index associated with that date. The range of years is `r range(pull(snp, year))`. 
 
+The `unemployment` dataset contains `r nrow(unemployment)` rows and `r ncol(unemployment)` variables. The `percent` column
+tells you the unemployment percentage for that associated `month` and `year`. So in June of 1948, the unemployment precentage was 3.6. 
+The range of years for this data os `r range(pull(unemployment, year))`. 
+
+Fianlly, I merged `pols`, `snp`, and `unemployment` to create `final`, which contains `r nrow(final)` observations and 
+`r ncol(final)` variables. The range of years is `r range(pull(unemployment, year))` and it tells us the unemployment percentage in the `percent` column, 
+S&P stock market index in the `close` column, and number of dem and rep senators/govenors/representatives
+for the given `month` and `year` in the `gov_gop`, `sen_gop`, `rep_gop`, `sen_dem`, `gov_dem`, and it tells us whether the
+`president` was dem or rep for the associated `year` and `month` in the `presient` column. 
 
 --
 __Problem 3__
@@ -183,15 +194,7 @@ baby_names = read_csv("./Popular_Baby_Names.csv") %>%
                      'WHITE NON HISP' = "WHITE NON HISPANIC" )) %>% 
   mutate(name = str_to_lower(name)) %>% 
   distinct() 
-   
 
-  #arrange(desc(gender))
-  #recode(name = str_to_lower(name))) %>%  
-  
-baby_names
-
-#rename year_of_birth to year
-# rename childs_first_name to name
 ```
 Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” 
 as a female baby name over time; this should have rows for ethnicities and columns for year. Produce 
@@ -200,45 +203,50 @@ a similar table showing the most popular name among male children over time.
 
 ```{r}
 #table showing rank in popularity of the name 'Olivia" 
-baby_names %>% 
+olivia = baby_names %>% 
   filter(name == "olivia") %>% 
   select("year", "ethnicity", "rank") %>% 
   pivot_wider(names_from = "year", values_from = "rank") %>% 
   knitr::kable(digits = 1)
-
+olivia
 # table to find male baby name with the highest rank
-baby_names %>% 
-  filter(gender == "male") %>%
+popular_male_name = baby_names %>%
+  filter(gender == "MALE") %>%
   filter(rank == 1) %>% 
-  select(-"count" ) %>% 
-  pivot_wider(names_from = "year", values_from = "name") 
-  #
+  select(everything(), -"count") %>% 
+  pivot_wider(names_from = "year", values_from = "name") %>% 
+  knitr::kable(digits = 1)
+popular_male_name
 ```
+The table `olivia` shows us the frequency of the name for `year` and `ethnicity`. The rows show the `ethnicity`
+and columns are `year`. 
+The table `popular_male_name` shows us which male baby name was the most popular among `ethnicity` and by `year`. 
+It appears that `jayden`, `ethan`, `liam`, are teh most popular as they were ranked 1 the most among the different
+ethnicities and for multiple years. `jayden` was ranked 1 multiples years for `asian and pacific islander`, 
+`black non hispanic`, and `hispanic`. `ethan` was also ranked 1 for multiple years among `asian and pacific islander`, 
+nd `black non hispanic`.
 
-```{r}
-baby_names %>% 
-  #group_by(year) %>% 
-  filter(gender == "male") %>%
-  filter(rank == 1) %>% 
-  select("year", "ethnicity", "rank","name" ) %>% 
-  pivot_wider(names_from = "year", values_from = "name") 
-  #knitr::kable(digits = 1)
-```
-
+### Scatterplot names for male, non hispanic children born in 2016
 
 Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
 children with a name (y axis) against the rank in popularity of that name (x axis).
-```{r}
+```{r, message = FALSE}
 
 plot = baby_names %>% 
   filter( gender == "MALE", 
           ethnicity == "WHITE NON HISPANIC", 
           year == 2016) %>% 
-ggplot(aes(x = rank, y = count)) +
-  geom_point() 
+ggplot(aes(x = rank, y = count, col= rank)) +
+  geom_point() +
+   geom_smooth(se = FALSE) +
+  ggtitle("Baby name frequency vs. rank in popularity")
 
 plot
 ```
+
+The plot `Baby name frequency vs. rank in popularity` shows the number of children with a name (`count`) against the rank 
+in popularity of that name (`rank`) for male, non-hispanic children born in 2016. We can see that as the rank in popularity
+of that name decreases, the number of children with that name also decreases, suggesting a somewhat linear relationship. 
 
 
 
