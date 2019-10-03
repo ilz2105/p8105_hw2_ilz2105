@@ -31,6 +31,8 @@ Next, I read and cleaned the precipitation data for the `2018 Precipitation` and
 For each, I omitted rows without precipitation data and added a variable `year`. Then I combined the precipitation 
 datasets and converted `month` to a character variable. 
 
+`r median(pull(filter(mr )))
+
 ```{r}
 # read and clean Mr. Trash Wheel sheet
 mrtrashwheel = read_excel("./Trash-Wheel-Collection-Totals-8-6-19.xlsx", 1, col_names = TRUE) %>% 
@@ -158,14 +160,22 @@ need to be removed (hint: google something like â€œdplyr remove duplicate rowsâ€
 ```{r}
 
 #load baby names dataset and tidy
+  #recode ethnicity and check all variables
+ #name to all lowercase
 baby_names = read_csv("./Popular_Baby_Names.csv") %>% 
   janitor::clean_names() %>% 
-  distinct() %>% 
-  mutate_all(toupper) %>% 
   rename("year" = year_of_birth, "name" = childs_first_name) %>% 
-  arrange(desc(gender))
-          
-  
+  mutate(
+    ethnicity = recode(ethnicity, 
+                     'ASIAN AND PACI' = "ASIAN AND PACIFIC ISLANDER",  
+                     'BLACK NON HISP' = "BLACK NON HISPANIC", 
+                     'WHITE NON HISP' = "WHITE NON HISPANIC" )) %>% 
+  mutate(name = str_to_lower(name)) %>% 
+  distinct() 
+   
+
+  #arrange(desc(gender))
+  #recode(name = str_to_lower(name))) %>%  
   
 baby_names
 
@@ -180,29 +190,32 @@ a similar table showing the most popular name among male children over time.
 ```{r}
 #table showing rank in popularity of the name 'Olivia" 
 baby_names %>% 
-  group_by(year) %>% 
-  filter(name == "OLIVIA") %>% 
+  #group_by(year) %>% 
+  filter(name == "olivia") %>% 
   select("year", "ethnicity", "rank") %>% 
   pivot_wider(names_from = "year", values_from = "rank") %>% 
   knitr::kable(digits = 1)
 
 # table for 'ETHAN'
 baby_names %>% 
-  group_by(year) %>% 
-  filter(name == "ETHAN") %>% 
-  select("year", "ethnicity", "rank") %>% 
-  pivot_wider(names_from = "year", values_from = "rank") %>% 
-  knitr::kable(digits = 1)
+  #group_by(year) %>% 
+  filter(gender == "male") %>%
+  filter(rank == 1) %>% 
+  select("year", "ethnicity", "rank","name" ) %>% 
+  pivot_wider(names_from = "year", values_from = "name") 
+  #knitr::kable(digits = 1)
 ```
 
 Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
 children with a name (y axis) against the rank in popularity of that name (x axis).
 ```{r}
 
-plot = filter(baby_names, gender == "MALE", ethnicity == "WHITE NON HISPANIC", year == "2016") %>% 
-
-ggplot( aes(x = "name", y = "rank", color = count)) +
-  geom_point()
+plot = baby_names %>% 
+  filter( gender == "MALE", 
+          ethnicity == "WHITE NON HISPANIC", 
+          year == 2016) %>% 
+ggplot(aes(x = rank, y = count)) +
+  geom_point() 
 
 plot
 ```
