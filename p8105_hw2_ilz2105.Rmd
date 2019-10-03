@@ -27,12 +27,6 @@ and `2018 Precipitation`. For the `mrtrashwheel` sheet, I omitted rows that did 
 and non-data entries. The number of `Sports Balls` was rounded to the nearest integer and converted to 
 an integer variable using `as.integer`. 
 
-Next, I read and cleaned the precipitation data for the `2018 Precipitation` and `2017 Precipitation` sheets. 
-For each, I omitted rows without precipitation data and added a variable `year`. Then I combined the precipitation 
-datasets and converted `month` to a character variable. 
-
-`r median(pull(filter(mr )))
-
 ```{r}
 # read and clean Mr. Trash Wheel sheet
 mrtrashwheel = read_excel("./Trash-Wheel-Collection-Totals-8-6-19.xlsx", 1, col_names = TRUE) %>% 
@@ -42,6 +36,15 @@ mutate(sports_balls = round(sports_balls, digits = 0)) %>%
 mutate(sports_balls = as.integer(sports_balls))
 mrtrashwheel
 
+median(pull(filter(mrtrashwheel, year == "2017") , sports_balls))
+
+```
+
+Next, I read and cleaned the precipitation data for the `2018 Precipitation` and `2017 Precipitation` sheets. 
+For each, I omitted rows without precipitation data and added a variable `year`. Then I combined the precipitation 
+datasets and converted `month` to a character variable.
+
+```{r}
 # read and clean 2018 precipitation data
 mrtrash_data_2018 = read_excel("./HealthyHarborWaterWheelTotals2018-7-28.xlsx", sheet = "2018 Precipitation", skip = 1 ) %>% 
   janitor::clean_names() %>%
@@ -74,6 +77,14 @@ mutate(month = as.numeric(month),
        month = month.name[month])
 both_precipitation
 ```
+
+The number of observations for the `mrtrashwheel` sheet was `r nrow(mrtrashwheel)`, and `r nrow(both_precipitation)` 
+in the `both_precipitation` dataset. The `mrtrash_data_2018` had `r nrow(mrtrash_data_2018)` observations, and the `mrtrash_data_2017` 
+had `rnrow(mrtrash_data_2017)` observations. The total precipitation in 2018 was `r sum(pull(mrtrash_data_2018, total))` inches. 
+The total amount of precipitation is 2017 was `r sum(pull(mrtrash_data_2017, total))` inches.
+The median number of sports balls in a dumpster in 2017 was  `r median(pull(filter(mrtrashwheel, year == "2017") , sports_balls))`.
+Some key variables in the sheets are `year` and `month` because those are the variables we joined by when merging
+`mrtrash_data2018` and `mrtrash_data_2018` to create `both_precipitation`.
 
 --
 __Problem 2__
@@ -190,13 +201,21 @@ a similar table showing the most popular name among male children over time.
 ```{r}
 #table showing rank in popularity of the name 'Olivia" 
 baby_names %>% 
-  #group_by(year) %>% 
   filter(name == "olivia") %>% 
   select("year", "ethnicity", "rank") %>% 
   pivot_wider(names_from = "year", values_from = "rank") %>% 
   knitr::kable(digits = 1)
 
-# table for 'ETHAN'
+# table to find male baby name with the highest rank
+baby_names %>% 
+  filter(gender == "male") %>%
+  filter(rank == 1) %>% 
+  select(-"count" ) %>% 
+  pivot_wider(names_from = "year", values_from = "name") 
+  #
+```
+
+```{r}
 baby_names %>% 
   #group_by(year) %>% 
   filter(gender == "male") %>%
@@ -205,6 +224,7 @@ baby_names %>%
   pivot_wider(names_from = "year", values_from = "name") 
   #knitr::kable(digits = 1)
 ```
+
 
 Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of 
 children with a name (y axis) against the rank in popularity of that name (x axis).
